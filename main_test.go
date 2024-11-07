@@ -1,4 +1,4 @@
-package simplesse
+package simplesse_test
 
 import (
 	"context"
@@ -8,17 +8,18 @@ import (
 	"testing"
 	"time"
 
+	sse "github.com/kamludwinski2/simplesse"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewServer(t *testing.T) {
-	server := NewServer(func() []int { return []int{1, 2, 3} })
+	server := sse.NewServer(func() []int { return []int{1, 2, 3} })
 
 	assert.NotNil(t, server, "expected server to be initialised")
 }
 
 func TestAddConnection(t *testing.T) {
-	server := NewServer(func() []int { return []int{1, 2, 3} })
+	server := sse.NewServer(func() []int { return []int{1, 2, 3} })
 	defer server.Shutdown()
 
 	w := httptest.NewRecorder()
@@ -31,7 +32,7 @@ func TestAddConnection(t *testing.T) {
 }
 
 func TestRemoveConnectionOnDisconnect(t *testing.T) {
-	server := NewServer(func() []int { return []int{1, 2, 3} })
+	server := sse.NewServer(func() []int { return []int{1, 2, 3} })
 	defer server.Shutdown()
 
 	w := httptest.NewRecorder()
@@ -53,7 +54,7 @@ func TestRemoveConnectionOnDisconnect(t *testing.T) {
 }
 
 func TestSendEvent(t *testing.T) {
-	server := NewServer(func() []int { return []int{1, 2, 3} })
+	server := sse.NewServer(func() []int { return []int{1, 2, 3} })
 	defer server.Shutdown()
 
 	w := httptest.NewRecorder()
@@ -62,14 +63,14 @@ func TestSendEvent(t *testing.T) {
 	go server.AddConnection(w, req)
 	time.Sleep(500 * time.Millisecond)
 
-	event := Event[int]{Type: "test", Payload: []int{42}}
+	event := sse.Event[int]{Type: "test", Payload: []int{42}}
 	err := server.SendEvent(event)
 
 	assert.NoError(t, err, "unexpected error sending event")
 }
 
 func TestMiddlewareInvocation(t *testing.T) {
-	server := NewServer(func() []int { return []int{1, 2, 3} })
+	server := sse.NewServer(func() []int { return []int{1, 2, 3} })
 
 	var connectCalled, disconnectCalled, warnCalled, errorCalled, snapshotCalled, sendCalled, flushCalled, shutdownCalled int32
 
@@ -77,9 +78,9 @@ func TestMiddlewareInvocation(t *testing.T) {
 	server.OnDisconnect(func(clientID string, duration time.Duration) { atomic.AddInt32(&disconnectCalled, 1) })
 	server.OnWarn(func(warning string) { atomic.AddInt32(&warnCalled, 1) })
 	server.OnError(func(err error) { atomic.AddInt32(&errorCalled, 1) })
-	server.OnSnapshot(func(clientID string, event Event[int]) { atomic.AddInt32(&snapshotCalled, 1) })
+	server.OnSnapshot(func(clientID string, event sse.Event[int]) { atomic.AddInt32(&snapshotCalled, 1) })
 	server.OnSend(func(clientIDs []string) { atomic.AddInt32(&sendCalled, 1) })
-	server.OnFlush(func(clientID string, event Event[int]) { atomic.AddInt32(&flushCalled, 1) })
+	server.OnFlush(func(clientID string, event sse.Event[int]) { atomic.AddInt32(&flushCalled, 1) })
 	server.OnShutdown(func(clientIDs []string) { atomic.AddInt32(&shutdownCalled, 1) })
 
 	w := httptest.NewRecorder()
@@ -90,7 +91,7 @@ func TestMiddlewareInvocation(t *testing.T) {
 
 	assert.Equal(t, int32(1), atomic.LoadInt32(&connectCalled), "expected connect middleware to be called once")
 
-	event := Event[int]{Type: "test", Payload: []int{42}}
+	event := sse.Event[int]{Type: "test", Payload: []int{42}}
 	err := server.SendEvent(event)
 	assert.NoError(t, err, "unexpected error sending event")
 

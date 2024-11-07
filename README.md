@@ -1,5 +1,6 @@
-# SSE
 Simplistic server that provides Server-Sent Events(**SSE**) functionality for real-time updates to connected clients.
+
+Originally designed to be used with [Cache](https://github.com/kamludwinski2/simplecache)
 
 ## Functionality
 - add and manage multiple client connections.
